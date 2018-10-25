@@ -1,19 +1,27 @@
 import os
 
-from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+import requests
 
 from helpers import apology, login_required, lookup, usd, cccheck
 
 # Configure application
 app = Flask(__name__)
 
-# Ensure templates are auto-reloaded
-app.config["TEMPLATES_AUTO_RELOAD"] = True
+# Configure session to use filesystem
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
+
+# Set up database
+engine = create_engine('postgres://mglgirwhnmxdjs:fd8813a60d2b0945159408499f192e2062b54753825d83323f04d3c5f2c0a042@ec2-54-83-19-244.compute-1.amazonaws.com:5432/d4q7kt3q4lq9ni')
+db = scoped_session(sessionmaker(bind=engine))
 
 # Ensure responses aren't cached
 @app.after_request
@@ -33,15 +41,19 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db = SQL("postgres://mglgirwhnmxdjs:fd8813a60d2b0945159408499f192e2062b54753825d83323f04d3c5f2c0a042@ec2-54-83-19-244.compute-1.amazonaws.com:5432/d4q7kt3q4lq9ni")
+db = "postgres://mglgirwhnmxdjs:fd8813a60d2b0945159408499f192e2062b54753825d83323f04d3c5f2c0a042@ec2-54-83-19-244.compute-1.amazonaws.com:5432/d4q7kt3q4lq9ni"
 
+@app.route("/home")
+def home():
+    return render_template("login.html")
 
 @app.route("/")
+@login_required
 def index():
     """Show portfolio of stocks"""
 
     # Select the users available cash, and entire portfolio
-    tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"])
+    tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"]).fetchall()
     cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
     networth = cash[0]["cash"]
 

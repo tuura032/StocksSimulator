@@ -4,4 +4,4 @@ Flask-Session
 requests
 gunicorn
 ItsDangerous==0.24
-psycopg2
+psycopg2-binary

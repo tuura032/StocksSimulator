@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions
@@ -39,9 +39,6 @@ app.config["SESSION_FILE_DIR"] = mkdtemp()
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
-
-# Configure CS50 Library to use SQLite database
-db = "postgres://mglgirwhnmxdjs:fd8813a60d2b0945159408499f192e2062b54753825d83323f04d3c5f2c0a042@ec2-54-83-19-244.compute-1.amazonaws.com:5432/d4q7kt3q4lq9ni"
 
 @app.route("/home")
 def home():

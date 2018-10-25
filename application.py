@@ -260,7 +260,7 @@ def register():
             return apology("This username is already taken, please try again!", 400)
 
         # Save login
-        session["user_id"] = result.id
+        session["user_id"] = result
 
         flash("Registration Successful!")
 

@@ -36,8 +36,7 @@ Session(app)
 db = SQL("postgres://mglgirwhnmxdjs:fd8813a60d2b0945159408499f192e2062b54753825d83323f04d3c5f2c0a042@ec2-54-83-19-244.compute-1.amazonaws.com:5432/d4q7kt3q4lq9ni")
 
 
-@app.route("/")
-@login_required
+@app.route("/", method=["GET"])
 def index():
     """Show portfolio of stocks"""
 

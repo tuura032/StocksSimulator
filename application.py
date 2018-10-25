@@ -258,14 +258,14 @@ def register():
         # Create new account
         result = db.execute("INSERT INTO users (username, hash) \
                                 VALUES(:username, :hash)", \
-                                {username=request.form.get("username"), hash = generate_password_hash(request.form.get("password"))})
+                                username=request.form.get("username"), hash = generate_password_hash(request.form.get("password")))
         db.commit()
 
         if not result:
             return apology("This username is already taken, please try again!", 400)
 
         # Save login
-        session["user_id"] = result
+        session["user_id"] = resulth
 
         flash("Registration Successful!")
 

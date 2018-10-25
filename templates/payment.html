@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Payment
+{% endblock %}
+
+{% block main %}
+    <b>Enter New Credit Card</b>
+
+    <p><form action="/payment" method="post">
+        <div class="form-group">
+            <input class="form-control" name="payment" placeholder="CC Number" type="number"/>
+        </div>
+        <input name="agreement" type="checkbox"/> I Agree to use this card (but not really)
+        <p></p><button class="btn btn-primary" id="submit" type="submit">Submit</button></p>
+    </form></p>
+
+    <p><b><a href="/deletecc">Delete Credit Card On File</a></b></p>
+{% endblock %}

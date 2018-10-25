@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    History
+{% endblock %}
+
+{% block main %}
+
+
+    <table class="table table-striped" style="width:100%">
+      <tr>
+        <th>Stocks Owned</th>
+        <th>Shares Owned</th>
+        <th>Current Price</th>
+        <th>Total Value</th>
+      </tr>
+    {% for portfolio in tables %}
+      <tr>
+        <td>{{ portfolio.name }}</td>
+        <td>{{ portfolio.shares }}</td>
+        <td>{{ portfolio.price }}</td>
+        <td>{{ portfolio.total }}</td>
+      </tr>
+    {% endfor %}
+    </table>
+
+    <p><b>Total Cash Available: {{ money }}</b></p>
+    <p><b>Cash + Stock Total Value: {{ networth }}</b></p>
+
+{% endblock %}

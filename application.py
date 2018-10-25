@@ -256,8 +256,7 @@ def register():
             return apology("Passwords must match and be 8 or more characters", 400)
 
         # Create new account
-        result = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hash)",
-                            {'username':request.form.get("username"), 'hash':generate_password_hash(request.form.get("password"))})
+        result = db.execute("INSERT INTO users (username, hash) VALUES (:username, :hash)", {'username':request.form.get("username"), 'hash':generate_password_hash(request.form.get("password"))})
         db.commit()
 
         if not result:

@@ -51,7 +51,7 @@ def index():
 
     # Select the users available cash, and entire portfolio
     tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"]).fetchall()
-    cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+    cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"]).fetchall()
     networth = cash[0]["cash"]
 
     # for each row in tables, pull out the symbol and update the current stock price, and and get current value of all stocks
@@ -64,9 +64,10 @@ def index():
         networth += newtotal
         db.execute("UPDATE portfolio SET price = :price, total = :total WHERE id = :id AND symbol =:symbol", \
                     price = usd(quote["price"]), total = usd(newtotal), id = session["user_id"], symbol=symbol)
+        db.commit()
 
     # Update table
-    upd_tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"])
+    upd_tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"]).fetchall()
 
     # Once prices and total stock value is updated, send it to the rendered template
     return render_template("index.html", tables=upd_tables, money = usd(cash[0]["cash"]), networth = usd(networth))
@@ -180,8 +181,8 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username"))
+        rows = db.execute("SELECT * FROM users2 WHERE username = :username",
+                          {'username':request.form.get("username")})
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):

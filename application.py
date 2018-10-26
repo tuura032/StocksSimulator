@@ -50,9 +50,9 @@ def index():
     """Show portfolio of stocks"""
 
     # Select the users available cash, and entire portfolio
-    tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"]).fetchall()
-    cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"]).fetchall()
-    networth = cash[0]["cash"]
+    tables = db.execute("SELECT * FROM portfolio WHERE id = :id", {'id':session["user_id"]}).fetchall()
+    cash = db.execute("SELECT cash FROM users WHERE id = :id", {'id':session["user_id"]}).fetchall()
+    networth = float(cash[0]["cash"])
 
     # for each row in tables, pull out the symbol and update the current stock price, and and get current value of all stocks
     for table in tables:
@@ -60,14 +60,14 @@ def index():
         shares = table["shares"]
         quote = lookup(symbol)
         newprice = quote["price"]
-        newtotal = newprice * shares
-        networth += newtotal
+        newtotal = newprice * float(shares)
+        networth += float(newtotal)
         db.execute("UPDATE portfolio SET price = :price, total = :total WHERE id = :id AND symbol =:symbol", \
-                    price = usd(quote["price"]), total = usd(newtotal), id = session["user_id"], symbol=symbol)
+                    {'price':quote["price"], 'total':newtotal, 'id':session["user_id"], 'symbol':symbol})
         db.commit()
 
     # Update table
-    upd_tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"]).fetchall()
+    upd_tables = db.execute("SELECT * FROM portfolio WHERE id = :id", {'id':session["user_id"]}).fetchall()
 
     # Once prices and total stock value is updated, send it to the rendered template
     return render_template("index.html", tables=upd_tables, money = usd(cash[0]["cash"]), networth = usd(networth))
@@ -95,54 +95,59 @@ def buy():
 
         # Ensure proper symbol was submitted
         if not ticker or not quote or ticker.isalpha() == False or len(ticker) > 5:
-            return apology("must enter valid ticker symbol", 400)
+            flash("must enter valid ticker symbol")
+            return render_template(url_for(buy))
 
         # Query database for user's cash
-        cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
+        cash = db.execute("SELECT cash FROM users WHERE id = :id", {'id':session["user_id"]}).fetchone()
 
         # Determine total purchase cost
         cost = float(shares) * (quote["price"])
 
         # Execute the transaction if funds are adequate
-        if float(cash[0]["cash"]) > cost:
+        if float(cash.cash) > cost:
 
             # create new transaction log
             db.execute("INSERT INTO transactions (ticker, price, quantity, id) \
-                            VALUES (:stockpurchase, :price, :quantity, :id)", \
-                            stockpurchase=ticker, \
-                            price=usd(quote["price"]), \
-                            quantity=shares, \
-                            id=session['user_id'])
+                            VALUES (:stockpurchase, :price, :quantity, :id)", { \
+                            'stockpurchase':ticker, \
+                            'price':quote["price"], \
+                            'quantity':shares, \
+                            'id':session['user_id']})
+            db.commit()
 
             # update remaining cash
             db.execute("UPDATE users SET cash = cash - :cost WHERE id = :id", \
-                            cost = cost, \
-                            id = session['user_id'])
+                            {'cost':cost, \
+                            'id':session['user_id']})
+            db.commit()
 
             # Select total shares of a single stock from users portfolio
             totalstock = db.execute("SELECT shares FROM portfolio \
                                         WHERE id = :id AND symbol= :symbol", \
-                                        id=session["user_id"], symbol=quote["symbol"])
+                                        {'id':session["user_id"], 'symbol':quote["symbol"]}).fetchall()
 
             # If user has no shares of stock, insert it into portfolio
             if not totalstock:
                 db.execute("INSERT INTO portfolio (name, shares, price, total, symbol, id) \
                             VALUES (:name, :shares, :price, :total, :symbol, :id)", \
-                            name=quote["name"], shares=shares, price=usd(quote["price"]), \
-                            total=(usd(quote["price"]*shares)), symbol=quote["symbol"] , id=session['user_id'])
+                            {'name':quote["name"], 'shares':shares, 'price':quote["price"], \
+                            'total':(quote["price"]*shares), 'symbol':quote["symbol"] , 'id':session['user_id']})
+                db.commit()
 
             # If user has prior shares, update their total number of shares
             else:
                 db.execute("UPDATE portfolio SET shares = :shares WHERE id =:id AND symbol = :symbol", \
-                            shares = shares+(totalstock[0]["shares"]), id=session["user_id"], symbol=quote["symbol"])
+                            {'shares' : shares+totalstock.shares, 'id':session["user_id"], 'symbol':quote["symbol"]})
+                db.commit()
 
             flash('You rock, you bought some stocks!')
 
             # Return user to "buy" page
             # Update table
-            upd_tables = db.execute("SELECT * FROM portfolio WHERE id = :id", id=session["user_id"])
-            cash = db.execute("SELECT cash FROM users WHERE id = :id", id=session["user_id"])
-            return render_template("index.html", tables = upd_tables, money = usd(cash[0]["cash"]))
+            upd_tables = db.execute("SELECT * FROM portfolio WHERE id = :id", {'id':session["user_id"]}).fetchall()
+            cash = db.execute("SELECT cash FROM users WHERE id = :id", {'id':session["user_id"]}).fetchone()
+            return render_template("index.html", tables = upd_tables, money = cash[0]["cash"])
 
         else:
             return apology("not enough money", 403)
@@ -166,39 +171,47 @@ def history():
 def login():
     """Log user in"""
 
-    # Forget any user_id
-    session.clear()
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
 
+        # Forget any user_id
+        session.clear()
+
         # Ensure username was submitted
         if not request.form.get("username"):
-            return apology("must provide username l", 403)
+            flash("please enter username")
+            return render_template("login.html")
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            return apology("must provide password", 403)
+            flash("please enter username")
+            return render_template("login.html")
 
         # Query database for username
         rows = db.execute("SELECT * FROM users2 WHERE username = :username",
-                          {'username':request.form.get("username")})
+                          {'username':request.form.get("username")}).fetchone()
 
-        # Ensure username exists and password is correct
-        #if len(rows) != 1 or 
-        if not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        # Ensure username exists and password is correct #len(rows) != 1 or
+        if not check_password_hash(rows["hash"], request.form.get("password")):
             flash("Incorrect Username and/or Password - Try Again")
             return render_template("login.html")
 
         # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+        session["user_id"] = rows.id
 
         # Redirect user to home page
         return redirect("/")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
-        return render_template("login.html")
+        # testing
+        rows = db.execute("SELECT * FROM users2 WHERE username = :username",
+                          {'username':'tuura'}).fetchall()
+
+        print(rows)
+
+        return render_template("login.html", rows=rows)
 
 
 @app.route("/logout")
